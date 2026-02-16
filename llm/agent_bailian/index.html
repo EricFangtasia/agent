@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>语音对话助手（HTTP版）</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        #chat-container {
+            border: 1px solid #ccc;
+            height: 400px;
+            overflow-y: scroll;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+        .message {
+            margin: 10px 0;
+            padding: 8px;
+            border-radius: 5px;
+        }
+        .user-message {
+            background-color: #d1f0ff;
+            text-align: right;
+        }
+        .ai-message {
+            background-color: #f0f0f0;
+        }
+        #controls {
+            display: flex;
+            gap: 10px;
+        }
+        #controls button {
+            padding: 10px 15px;
+        }
+        #recording-indicator {
+            color: red;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>语音对话助手（HTTP版）</h1>
+    
+    <div id="chat-container"></div>
+    
+    <div id="controls">
+        <button id="start-recording" onclick="startRecording()">开始录音</button>
+        <button id="stop-recording" onclick="stopRecording()" disabled>停止录音</button>
+        <span id="recording-indicator"></span>
+    </div>
+    
+    <div>
+        <input type="text" id="text-input" placeholder="或者输入文字消息..." style="width: 70%;">
+        <button onclick="sendTextMessage()">发送</button>
+    </div>
+
+    <script>
+        // 保存对话历史
+        let messages = [];
+
+        // 添加消息到聊天界面
+        function addMessage(sender, message) {
+            const chatContainer = document.getElementById('chat-container');
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('message');
+            messageDiv.classList.add(sender === '用户' ? 'user-message' : 'ai-message');
+            
+            const senderSpan = document.createElement('strong');
+            senderSpan.textContent = sender + ': ';
+            messageDiv.appendChild(senderSpan);
+            
+            const contentSpan = document.createElement('span');
+            contentSpan.textContent = message;
+            messageDiv.appendChild(contentSpan);
+            
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        // 发送文本消息
+        async function sendTextMessage() {
+            const input = document.getElementById('text-input');
+            const message = input.value.trim();
+            if (message) {
+                addMessage('用户', message);
+                
+                // 将消息添加到历史记录
+                messages.push({"role": "user", "content": message});
+                
+                try {
+                    // 调用对话API
+                    const response = await fetch('http://localhost:8000/v1/conversation', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            messages: messages,
+                            model: "qwen-plus-2025-12-01"
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        const aiResponse = data.data.response;
+                        addMessage('AI', aiResponse);
+                        
+                        // 更新对话历史
+                        messages = data.data.messages;
+                        
+                        // 将AI回复转换为语音
+                        speakText(aiResponse);
+                    } else {
+                        addMessage('错误', data.error.message);
+                    }
+                } catch (error) {
+                    addMessage('错误', error.message);
+                    console.error('请求失败:', error);
+                }
+                
+                input.value = '';
+            }
+        }
+
+        // 将文本转换为语音
+        async function speakText(text) {
+            try {
+                // 调用TTS接口
+                const response = await fetch('http://localhost:8000/v1/audio/speech', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        input: text,
+                        voice: 'zh-CN-XiaoxiaoNeural'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.audio) {
+                    // 创建音频元素播放语音
+                    const audio = new Audio(`data:audio/wav;base64,${data.audio}`);
+                    audio.play();
+                }
+            } catch (error) {
+                console.error('TTS请求失败:', error);
+            }
+        }
+
+        // 语音识别相关
+        let mediaRecorder;
+        let audioChunks = [];
+
+        // 开始录音
+        async function startRecording() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                audioChunks = [];
+                
+                mediaRecorder.ondataavailable = event => {
+                    audioChunks.push(event.data);
+                };
+                
+                mediaRecorder.onstop = async () => {
+                    // 停止录音后发送到服务器进行语音识别
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                    
+                    // 使用FormData发送音频文件
+                    const formData = new FormData();
+                    formData.append('file', audioBlob, 'recording.wav');
+                    
+                    try {
+                        const response = await fetch('http://localhost:8000/v1/audio/transcriptions', {
+                            method: 'POST',
+                            body: formData
+                        });
+                        
+                        const data = await response.json();
+                        
+                        if (data.text) {
+                            // 显示识别的文本
+                            addMessage('用户', data.text);
+                            
+                            // 将消息添加到历史记录
+                            messages.push({"role": "user", "content": data.text});
+                            
+                            // 调用对话API获取AI回复
+                            const chatResponse = await fetch('http://localhost:8000/v1/conversation', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                    messages: messages,
+                                    model: "qwen-plus-2025-12-01"
+                                })
+                            });
+                            
+                            const chatData = await chatResponse.json();
+                            
+                            if (chatData.success) {
+                                const aiResponse = chatData.data.response;
+                                addMessage('AI', aiResponse);
+                                
+                                // 更新对话历史
+                                messages = chatData.data.messages;
+                                
+                                // 将AI回复转换为语音
+                                speakText(aiResponse);
+                            } else {
+                                addMessage('错误', chatData.error.message);
+                            }
+                        } else {
+                            console.error('语音识别失败:', data);
+                        }
+                    } catch (error) {
+                        addMessage('错误', error.message);
+                        console.error('语音识别请求失败:', error);
+                    }
+                    
+                    // 停止所有音频轨道
+                    stream.getTracks().forEach(track => track.stop());
+                };
+                
+                mediaRecorder.start();
+                document.getElementById('start-recording').disabled = true;
+                document.getElementById('stop-recording').disabled = false;
+                document.getElementById('recording-indicator').textContent = '录音中...';
+                
+                console.log('开始录音');
+            } catch (err) {
+                console.error('无法访问麦克风:', err);
+                alert('无法访问麦克风: ' + err.message);
+            }
+        }
+
+        // 停止录音
+        function stopRecording() {
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+                document.getElementById('start-recording').disabled = false;
+                document.getElementById('stop-recording').disabled = true;
+                document.getElementById('recording-indicator').textContent = '';
+                
+                console.log('停止录音');
+            }
+        }
+
+        // 按回车键发送消息
+        document.getElementById('text-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendTextMessage();
+            }
+        });
+    </script>
+</body>
+</html>

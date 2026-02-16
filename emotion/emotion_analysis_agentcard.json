@@ -1,0 +1,43 @@
+{
+  "name": "emotion_analysis_agent",
+  "description": "情绪分析智能代理，能够分析图片中人脸的情绪状态",
+  "version": "1.0.0",
+  "author": "Emotion Analysis Team",
+  "capabilities": {
+    "extensions": [
+      {
+        "uri": "https://help.aliyun.com/zh/model-studio/multimodal-integration-a2a-intent",
+        "params": {
+          "skills": [
+            {
+              "id": "emotion-analysis",
+              "inputSchema": {
+                "type": "object",
+                "properties": {
+                  "image_base64": {
+                    "type": "string",
+                    "description": "Base64编码的图片数据，用于情绪分析"
+                  }
+                },
+                "required": ["image_base64"]
+              }
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "services": [
+    {
+      "id": "emotion-mcp-service",
+      "name": "情绪分析MCP服务",
+      "description": "提供情绪分析能力的MCP服务",
+      "endpoint": "http://localhost:8089",
+      "type": "mcp"
+    }
+  ],
+  "metadata": {
+    "category": "image-processing",
+    "tags": ["emotion-detection", "ai", "image-analysis", "multimodal"]
+  }
+}

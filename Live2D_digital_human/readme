@@ -1,0 +1,14 @@
+前端框架: Next.js 15 + React 19 + TypeScript
+数字人渲染: Live2D Cubism 5 SDK (2024最新)
+AI语音对话: OpenAI Realtime API (2024年10月发布)
+备选方案: Deepgram + Claude 4.5 + Cartesia
+3D方案: Three.js + Ready Player Me VRM
+状态管理: Zustand
+样式: Tailwind CSS v4
+部署: Vercel Edge Functions
+
+
+Here are the files and directories up to 2 levels deep in /mnt/skills/public/frontend-design, excluding hidden items and node_modules:
+15K	/mnt/skills/public/frontend-design
+10K	/mnt/skills/public/frontend-design/LICENSE.txt
+4.5K	/mnt/skills/public/frontend-design/SKILL.md

@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>多模态对话助手（图片+语音）</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        #chat-container {
+            border: 1px solid #ccc;
+            height: 400px;
+            overflow-y: scroll;
+            padding: 10px;
+            margin-bottom: 10px;
+            background-color: white;
+            border-radius: 5px;
+        }
+        .message {
+            margin: 10px 0;
+            padding: 8px;
+            border-radius: 5px;
+            max-width: 80%;
+        }
+        .user-message {
+            background-color: #d1f0ff;
+            text-align: right;
+            margin-left: auto;
+            margin-right: 0;
+        }
+        .ai-message {
+            background-color: #f0f0f0;
+            margin-right: auto;
+            margin-left: 0;
+        }
+        #controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        #controls button {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #start-recording {
+            background-color: #ff6b6b;
+            color: white;
+        }
+        #start-recording:hover {
+            background-color: #ff5252;
+        }
+        #stop-recording {
+            background-color: #4ecdc4;
+            color: white;
+        }
+        #stop-recording:hover {
+            background-color: #26a69a;
+        }
+        #select-image {
+            background-color: #45b7d1;
+            color: white;
+        }
+        #select-image:hover {
+            background-color: #3498db;
+        }
+        #send-voice-image {
+            background-color: #96ceb4;
+            color: white;
+        }
+        #send-voice-image:hover {
+            background-color: #85c1a3;
+        }
+        #send-text-image {
+            background-color: #2ecc71;
+            color: white;
+        }
+        #send-text-image:hover {
+            background-color: #27ae60;
+        }
+        #recording-indicator {
+            color: red;
+            font-weight: bold;
+            align-self: center;
+        }
+        .input-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .input-group input, .input-group button {
+            padding: 8px 12px;
+        }
+        #image-preview {
+            max-width: 200px;
+            max-height: 200px;
+            margin-top: 10px;
+            display: none;
+        }
+        .status {
+            padding: 5px;
+            margin: 5px 0;
+            border-radius: 3px;
+            text-align: center;
+        }
+        .status.success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .status.error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <h1>多模态对话助手（图片+语音）</h1>
+    
+    <div id="chat-container"></div>
+    
+    <div id="controls">
+        <button id="start-recording" onclick="startRecording()">开始录音</button>
+        <button id="stop-recording" onclick="stopRecording()" disabled>停止录音</button>
+        <button id="select-image" onclick="document.getElementById('image-input').click()">选择图片</button>
+        <input type="file" id="image-input" accept="image/*" style="display: none;" onchange="previewImage(event)">
+        <button id="send-voice-image" onclick="sendMultimodalMessage()">发送（图片+语音）</button>
+        <span id="recording-indicator"></span>
+    </div>
+    
+    <div id="image-preview-container">
+        <img id="image-preview" alt="图片预览">
+    </div>
+    
+    <div class="input-group">
+        <input type="text" id="text-input" placeholder="输入文字消息..." style="flex: 1;">
+        <button id="send-text-image" onclick="sendTextAndImage()">发送（文字+图片）</button>
+    </div>
+    
+    <div id="status-message" class="status" style="display: none;"></div>
+
+    <script>
+        // 保存对话历史
+        let messages = [];
+        let audioBlob = null;
+        let selectedImage = null;
+
+        // 显示状态消息
+        function showStatus(message, isSuccess = true) {
+            const statusEl = document.getElementById('status-message');
+            statusEl.textContent = message;
+            statusEl.className = `status ${isSuccess ? 'success' : 'error'}`;
+            statusEl.style.display = 'block';
+            
+            setTimeout(() => {
+                statusEl.style.display = 'none';
+            }, 3000);
+        }
+
+        // 添加消息到聊天界面
+        function addMessage(sender, message) {
+            const chatContainer = document.getElementById('chat-container');
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('message');
+            messageDiv.classList.add(sender === '用户' ? 'user-message' : 'ai-message');
+            
+            const senderSpan = document.createElement('strong');
+            senderSpan.textContent = sender + ': ';
+            messageDiv.appendChild(senderSpan);
+            
+            const contentSpan = document.createElement('span');
+            
+            // 检查是否是图片消息
+            if (typeof message === 'object' && message.image) {
+                const img = document.createElement('img');
+                img.src = message.image;
+                img.style.maxWidth = '150px';
+                img.style.maxHeight = '150px';
+                img.alt = '用户发送的图片';
+                
+                const br = document.createElement('br');
+                
+                contentSpan.appendChild(img);
+                if (message.text) {
+                    contentSpan.appendChild(br);
+                    contentSpan.appendChild(document.createTextNode(message.text));
+                }
+            } else {
+                contentSpan.textContent = message;
+            }
+            
+            messageDiv.appendChild(contentSpan);
+            
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        // 播放音频数据
+        function playAudio(audioBase64) {
+            try {
+                // 检查是否是PCM格式的音频数据
+                if (audioBase64.includes('pcm') || audioBase64.length > 100000) { // 假设长数据是PCM格式
+                    // 将PCM数据转换为WAV格式后播放
+                    playPcmAudio(audioBase64);
+                } else {
+                    // 将base64音频数据转换为blob URL
+                    const audioBytes = Uint8Array.from(atob(audioBase64), c => c.charCodeAt(0));
+                    const audioBlob = new Blob([audioBytes], { type: 'audio/wav' });
+                    const audioUrl = URL.createObjectURL(audioBlob);
+                    
+                    const audio = new Audio(audioUrl);
+                    audio.play().catch(e => console.error('音频播放失败:', e));
+                    
+                    // 播放完成后释放URL对象
+                    audio.onended = () => {
+                        URL.revokeObjectURL(audioUrl);
+                    };
+                }
+            } catch (error) {
+                console.error('播放音频时出错:', error);
+            }
+        }
+        
+        // 将PCM数据转换为WAV格式并播放
+        function playPcmAudio(pcmBase64) {
+            try {
+                // 解码base64数据
+                const binaryString = atob(pcmBase64);
+                const bytes = new Uint8Array(binaryString.length);
+                for (let i = 0; i < binaryString.length; i++) {
+                    bytes[i] = binaryString.charCodeAt(i);
+                }
+                
+                // 将PCM数据转换为WAV格式
+                const wavBlob = pcmToWav(bytes, 24000, 16, 1); // 24kHz, 16位, 单声道
+                const wavUrl = URL.createObjectURL(wavBlob);
+                
+                const audio = new Audio(wavUrl);
+                audio.play().catch(e => console.error('音频播放失败:', e));
+                
+                // 播放完成后释放URL对象
+                audio.onended = () => {
+                    URL.revokeObjectURL(wavUrl);
+                };
+            } catch (error) {
+                console.error('播放PCM音频时出错:', error);
+            }
+        }
+        
+        // 将PCM数据转换为WAV格式
+        function pcmToWav(pcmData, sampleRate, bitDepth, channels) {
+            const blockAlign = (channels * bitDepth) / 8;
+            const byteRate = sampleRate * blockAlign;
+            const dataSize = pcmData.length * (bitDepth / 8);
+            
+            // 创建WAV文件头
+            const buffer = new ArrayBuffer(44 + dataSize);
+            const view = new DataView(buffer);
+            
+            // WAV文件头
+            const writeString = (offset, string) => {
+                for (let i = 0; i < string.length; i++) {
+                    view.setUint8(offset + i, string.charCodeAt(i));
+                }
+            };
+            
+            writeString(0, 'RIFF');
+            view.setUint32(4, 36 + dataSize, true); // 文件大小
+            writeString(8, 'WAVE');
+            writeString(12, 'fmt ');
+            view.setUint32(16, 16, true); // fmt块大小
+            view.setUint16(20, 1, true); // 音频格式 (1 = PCM)
+            view.setUint16(22, channels, true); // 声道数
+            view.setUint32(24, sampleRate, true); // 采样率
+            view.setUint32(28, byteRate, true); // 字节率
+            view.setUint16(32, blockAlign, true); // 块对齐
+            view.setUint16(34, bitDepth, true); // 位深度
+            writeString(36, 'data');
+            view.setUint32(40, dataSize, true); // 数据块大小
+            
+            // 添加PCM数据
+            let offset = 44;
+            for (let i = 0; i < pcmData.length; i++, offset++) {
+                view.setUint8(offset, pcmData[i]);
+            }
+            
+            return new Blob([view], { type: 'audio/wav' });
+        }
+        
+        // 上传图片时预览
+        function previewImage(input) {
+            const file = input.target.files[0];
+            if (file) {
+                selectedImage = file;
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const preview = document.getElementById('image-preview');
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+                    showStatus('图片已选择');
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // 获取API基础URL - 使用当前页面的协议和主机
+        function getApiBaseUrl() {
+            return window.location.protocol + '//' + window.location.host;
+        }
+
+        // 发送多模态消息（图片+语音）
+        async function sendMultimodalMessage() {
+            if (!selectedImage) {
+                showStatus('请先选择图片', false);
+                return;
+            }
+            
+            if (!audioBlob) {
+                showStatus('请先录制语音', false);
+                return;
+            }
+            
+            // 显示用户发送的消息（包含图片和语音标识）
+            addMessage('用户', {
+                image: URL.createObjectURL(selectedImage),
+                text: '（语音消息）'
+            });
+            
+            // 创建FormData发送图片和语音
+            const formData = new FormData();
+            formData.append('image', selectedImage, selectedImage.name);
+            formData.append('audio', audioBlob, 'recording.wav');
+            
+            // 包含消息历史
+            const data = {
+                messages: messages,
+                model: "qwen-plus-2025-12-01"
+            };
+            formData.append('data', JSON.stringify(data));
+            
+            try {
+                // 使用当前页面的服务器地址，而不是硬编码的localhost
+                const response = await fetch(getApiBaseUrl() + '/v1/conversation', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    let aiResponse = result.data.response;
+                    
+                    // 检查aiResponse是否为对象数组格式，如果是则提取文本内容
+                    if (Array.isArray(aiResponse) && aiResponse.length > 0) {
+                        let textContent = "";
+                        for (let item of aiResponse) {
+                            if (typeof item === 'object' && item.text) {
+                                textContent += item.text;
+                            } else if (typeof item === 'string') {
+                                textContent += item;
+                            }
+                        }
+                        aiResponse = textContent;
+                    } else if (typeof aiResponse === 'object' && aiResponse.text) {
+                        // 如果aiResponse是单个对象，直接提取text
+                        aiResponse = aiResponse.text;
+                    }
+                    
+                    addMessage('AI', aiResponse);
+                    
+                    // 检查是否有音频数据并播放
+                    if (result.data.audio) {
+                        playAudio(result.data.audio);
+                    }
+                    
+                    // 更新对话历史
+                    messages = result.data.messages;
+                    
+                    showStatus('消息发送成功');
+                } else {
+                    addMessage('错误', result.error.message || '请求失败');
+                    showStatus('请求失败: ' + (result.error.message || '未知错误'), false);
+                }
+            } catch (error) {
+                addMessage('错误', error.message);
+                showStatus('请求失败: ' + error.message, false);
+                console.error('请求失败:', error);
+            }
+        }
+
+        // 发送文本和图片消息
+        async function sendTextAndImage() {
+            const input = document.getElementById('text-input');
+            const text = input.value.trim();
+            
+            // 检查是否有文本或图片
+            if (!text && !selectedImage) {
+                showStatus('请至少输入文本或选择一张图片', false);
+                return;
+            }
+            
+            // 显示用户发送的消息（包含图片和文本）
+            if (selectedImage) {
+                addMessage('用户', {
+                    image: URL.createObjectURL(selectedImage),
+                    text: text
+                });
+            } else {
+                addMessage('用户', text);
+            }
+            
+            // 将消息添加到历史记录
+            messages.push({"role": "user", "content": text});
+            
+            try {
+                // 使用FormData发送文本和图片（如果有的话）
+                const formData = new FormData();
+                
+                if (text) {
+                    formData.append('text', text);
+                }
+                
+                if (selectedImage) {
+                    formData.append('image', selectedImage, selectedImage.name);
+                }
+                
+                // 包含消息历史
+                const data = {
+                    messages: messages,
+                    model: "qwen-plus-2025-12-01"
+                };
+                formData.append('data', JSON.stringify(data));
+                
+                // 使用当前页面的服务器地址，而不是硬编码的localhost
+                const response = await fetch(getApiBaseUrl() + '/v1/text-image-conversation', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    let aiResponse = result.data.response;
+                    
+                    // 检查aiResponse是否为对象数组格式，如果是则提取文本内容
+                    if (Array.isArray(aiResponse) && aiResponse.length > 0) {
+                        let textContent = "";
+                        for (let item of aiResponse) {
+                            if (typeof item === 'object' && item.text) {
+                                textContent += item.text;
+                            } else if (typeof item === 'string') {
+                                textContent += item;
+                            }
+                        }
+                        aiResponse = textContent;
+                    } else if (typeof aiResponse === 'object' && aiResponse.text) {
+                        // 如果aiResponse是单个对象，直接提取text
+                        aiResponse = aiResponse.text;
+                    }
+                    
+                    addMessage('AI', aiResponse);
+                    
+                    // 检查是否有音频数据并播放
+                    if (result.data.audio) {
+                        playAudio(result.data.audio);
+                    }
+                    
+                    // 更新对话历史
+                    messages = result.data.messages;
+                    
+                    showStatus('消息发送成功');
+                } else {
+                    addMessage('错误', result.error.message || '请求失败');
+                    showStatus('请求失败: ' + (result.error.message || '未知错误'), false);
+                }
+            } catch (error) {
+                addMessage('错误', error.message);
+                showStatus('请求失败: ' + error.message, false);
+                console.error('请求失败:', error);
+            }
+        }
+
+        // 发送文本消息（仅发送文字，不发送图片）
+        async function sendTextMessage() {
+            const input = document.getElementById('text-input');
+            const message = input.value.trim();
+            if (message) {
+                addMessage('用户', message);
+                
+                // 将消息添加到历史记录
+                messages.push({"role": "user", "content": message});
+                
+                try {
+                    // 使用当前页面的服务器地址，而不是硬编码的localhost
+                    const response = await fetch(getApiBaseUrl() + '/v1/text-image-conversation', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            text: message,
+                            messages: messages,
+                            model: "qwen-plus-2025-12-01"
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        let aiResponse = data.data.response;
+                        
+                        // 检查aiResponse是否为对象数组格式，如果是则提取文本内容
+                        if (Array.isArray(aiResponse) && aiResponse.length > 0) {
+                            let textContent = "";
+                            for (let item of aiResponse) {
+                                if (typeof item === 'object' && item.text) {
+                                    textContent += item.text;
+                                } else if (typeof item === 'string') {
+                                    textContent += item;
+                                }
+                            }
+                            aiResponse = textContent;
+                        } else if (typeof aiResponse === 'object' && aiResponse.text) {
+                            // 如果aiResponse是单个对象，直接提取text
+                            aiResponse = aiResponse.text;
+                        }
+                        
+                        addMessage('AI', aiResponse);
+                        
+                        // 检查是否有音频数据并播放
+                        if (data.data.audio) {
+                            playAudio(data.data.audio);
+                        }
+                        
+                        // 更新对话历史
+                        messages = data.data.messages;
+                        
+                        showStatus('消息发送成功');
+                    } else {
+                        addMessage('错误', data.error.message);
+                        showStatus('请求失败: ' + data.error.message, false);
+                    }
+                } catch (error) {
+                    addMessage('错误', error.message);
+                    showStatus('请求失败: ' + error.message, false);
+                    console.error('请求失败:', error);
+                }
+                
+                input.value = '';
+            }
+        }
+
+        // 语音识别相关
+        let mediaRecorder;
+        let audioChunks = [];
+
+        // 开始录音
+        async function startRecording() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                audioChunks = [];
+                
+                mediaRecorder.ondataavailable = event => {
+                    audioChunks.push(event.data);
+                };
+                
+                mediaRecorder.onstop = () => {
+                    // 将音频片段合并为Blob
+                    audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                    showStatus('语音录制完成');
+                    
+                    // 停止所有音频轨道
+                    stream.getTracks().forEach(track => track.stop());
+                };
+                
+                mediaRecorder.start();
+                document.getElementById('start-recording').disabled = true;
+                document.getElementById('stop-recording').disabled = false;
+                document.getElementById('recording-indicator').textContent = '录音中...';
+                
+                console.log('开始录音');
+            } catch (err) {
+                console.error('无法访问麦克风:', err);
+                showStatus('无法访问麦克风: ' + err.message, false);
+            }
+        }
+
+        // 停止录音
+        function stopRecording() {
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+                document.getElementById('start-recording').disabled = false;
+                document.getElementById('stop-recording').disabled = true;
+                document.getElementById('recording-indicator').textContent = '';
+                
+                console.log('停止录音');
+            }
+        }
+
+        // 按回车键发送消息
+        document.getElementById('text-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                // 如果有图片被选择，则同时发送文字和图片
+                if (selectedImage) {
+                    sendTextAndImage();
+                } else {
+                    sendTextMessage();
+                }
+            }
+        });
+    </script>
+</body>
+</html>
