@@ -1,0 +1,59 @@
+NAME: "Volcengine-API"
+VERSION: "v0.0.1"
+DESC: "接入火山引擎语音合成服务"
+META: {
+  official: "https://www.volcengine.com/",
+  configuration: "https://console.volcengine.com/speech/service",
+  tips: "火山引擎TTS服务",
+  fee: ""
+}
+PARAMETERS: [
+  {
+    name: "app_id",
+    description: "Volcengine App ID.",
+    type: "string",
+    required: false,
+    choices: [],
+    default: ""
+  },
+  {
+    name: "access_token",
+    description: "Volcengine Access Token.",
+    type: "string",
+    required: false,
+    choices: [],
+    default: ""
+  },
+  {
+    name: "voice_type",
+    description: "Voice type for TTS.",
+    type: "string",
+    required: false,
+    choices: ["BV001_streaming", "BV002_streaming", "BV700_V2_streaming"],
+    default: "BV001_streaming"
+  },
+  {
+    name: "speed_ratio",
+    description: "Speech speed ratio (0.2-3.0).",
+    type: "float",
+    required: false,
+    range: [0.2, 3.0],
+    default: 1.0
+  },
+  {
+    name: "volume_ratio",
+    description: "Volume ratio (0.1-3.0).",
+    type: "float",
+    required: false,
+    range: [0.1, 3.0],
+    default: 1.0
+  },
+  {
+    name: "pitch_ratio",
+    description: "Pitch ratio (0.1-3.0).",
+    type: "float",
+    required: false,
+    range: [0.1, 3.0],
+    default: 1.0
+  }
+]

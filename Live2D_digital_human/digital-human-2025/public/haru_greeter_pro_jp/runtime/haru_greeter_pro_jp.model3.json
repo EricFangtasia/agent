@@ -1,0 +1,85 @@
+{
+  "Version": 3,
+  "FileReferences": {
+    "Moc": "haru_greeter_pro_jp.moc",
+    "Textures": [
+      "haru_greeter_pro_jp.2048/texture_00.png"
+    ],
+    "Physics": "haru_greeter_pro_jp.physics3.json",
+    "DisplayInfo": "haru_greeter_pro_jp.cdi3.json",
+    "Motions": {
+      "Idle": [
+        {
+          "File": "motions/haru_greeter_pro_jp_m_01.motion3.json"
+        }
+      ]
+    }
+  },
+  "Groups": [
+    {
+      "Target": "Parameter",
+      "Name": "LipSync",
+      "Ids": [
+        "ParamMouthOpenY"
+      ]
+    },
+    {
+      "Target": "Parameter",
+      "Name": "EyeBlink",
+      "Ids": [
+        "ParamEyeLOpen",
+        "ParamEyeROpen"
+      ]
+    }
+  ],
+  "Parameters": [
+    {
+      "Id": "ParamAngleX",
+      "Name": "角度 X",
+      "MinimumValue": -30,
+      "MaximumValue": 30,
+      "DefaultValue": 0
+    },
+    {
+      "Id": "ParamAngleY",
+      "Name": "角度 Y",
+      "MinimumValue": -30,
+      "MaximumValue": 30,
+      "DefaultValue": 0
+    },
+    {
+      "Id": "ParamAngleZ",
+      "Name": "角度 Z",
+      "MinimumValue": -30,
+      "MaximumValue": 30,
+      "DefaultValue": 0
+    },
+    {
+      "Id": "ParamMouthOpenY",
+      "Name": "口を開閉",
+      "MinimumValue": 0,
+      "MaximumValue": 1,
+      "DefaultValue": 0
+    },
+    {
+      "Id": "ParamEyeLOpen",
+      "Name": "左目　開閉",
+      "MinimumValue": 0,
+      "MaximumValue": 1,
+      "DefaultValue": 1
+    },
+    {
+      "Id": "ParamEyeROpen",
+      "Name": "右目　開閉",
+      "MinimumValue": 0,
+      "MaximumValue": 1,
+      "DefaultValue": 1
+    }
+  ],
+  "Parts": [
+    {
+      "Id": "Part01",
+      "Name": "Part01"
+    }
+  ]
+}

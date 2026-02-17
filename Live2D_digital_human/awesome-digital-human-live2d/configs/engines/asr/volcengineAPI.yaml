@@ -1,0 +1,36 @@
+NAME: "Volcengine-API"
+VERSION: "v0.0.1"
+DESC: "接入火山引擎语音识别服务"
+META: {
+  official: "https://www.volcengine.com/",
+  configuration: "https://console.volcengine.com/speech/service",
+  tips: "火山引擎ASR服务",
+  fee: ""
+}
+# 暴露给前端的参数选项以及默认值
+PARAMETERS: [
+  {
+    name: "app_id",
+    description: "Volcengine App ID.",
+    type: "string",
+    required: false,
+    choices: [],
+    default: ""
+  },
+  {
+    name: "access_token",
+    description: "Volcengine Access Token.",
+    type: "string",
+    required: false,
+    choices: [],
+    default: ""
+  },
+  {
+    name: "cluster",
+    description: "Volcengine Cluster ID.",
+    type: "string",
+    required: false,
+    choices: [],
+    default: "volcano_asr"
+  }
+]

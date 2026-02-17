@@ -1,0 +1,55 @@
+{
+  "Version": 3,
+  "Parameters": [
+    {
+      "Id": "ParamAngleX",
+      "GroupId": "ParamGroupFace",
+      "Name": "角度 X"
+    },
+    {
+      "Id": "ParamAngleY",
+      "GroupId": "ParamGroupFace",
+      "Name": "角度 Y"
+    },
+    {
+      "Id": "ParamAngleZ",
+      "GroupId": "ParamGroupFace",
+      "Name": "角度 Z"
+    },
+    {
+      "Id": "ParamMouthOpenY",
+      "GroupId": "ParamGroupMouth",
+      "Name": "口を開閉"
+    },
+    {
+      "Id": "ParamEyeLOpen",
+      "GroupId": "ParamGroupEyes",
+      "Name": "左目　開閉"
+    },
+    {
+      "Id": "ParamEyeROpen",
+      "GroupId": "ParamGroupEyes",
+      "Name": "右目　開閉"
+    }
+  ],
+  "ParameterGroups": [
+    {
+      "Id": "ParamGroupFace",
+      "Name": "顔の角度"
+    },
+    {
+      "Id": "ParamGroupMouth",
+      "Name": "口"
+    },
+    {
+      "Id": "ParamGroupEyes",
+      "Name": "目"
+    }
+  ],
+  "Parts": [
+    {
+      "Id": "Part01",
+      "Name": "Part01"
+    }
+  ]
+}
