@@ -28,6 +28,11 @@ export function useAppConfig() {
     const { setLive2dCharacter } = useLive2D();
 
     const setCurrentCharacter = (character: ResourceModel | null) => {
+        // 如果没有可用的角色模型，则不加载
+        if (CONSTANTS.SENTIO_CHARACTER_FREE_MODELS.length === 0 && CONSTANTS.SENTIO_CHARACTER_IP_MODELS.length === 0) {
+            setCharacter(null);
+            return;
+        }
         if (character == null) {
             const model = CONSTANTS.SENTIO_CHARACTER_DEFAULT;
             const path = CONSTANTS.SENTIO_CHARACTER_FREE_PATH;

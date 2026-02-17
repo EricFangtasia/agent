@@ -9,11 +9,27 @@ from ..builder import TTSEngines
 from ..engineBase import BaseTTSEngine
 import edge_tts
 import base64
+import os
+import hashlib
+from pathlib import Path
 from typing import List
 from digitalHuman.protocol import *
 from digitalHuman.utils import logger, mp3ToWav
 
 __all__ = ["EdgeApiTts"]
+
+# 语音缓存目录
+CACHE_DIR = Path("./outputs/tts_cache")
+
+def get_cache_key(text: str, voice: str, rate: int, volume: int, pitch: int) -> str:
+    """生成缓存文件名"""
+    key_str = f"{text}_{voice}_{rate}_{volume}_{pitch}"
+    return hashlib.md5(key_str.encode('utf-8')).hexdigest()
+
+def get_cache_path(text: str, voice: str, rate: int, volume: int, pitch: int) -> Path:
+    """获取缓存文件路径"""
+    cache_key = get_cache_key(text, voice, rate, volume, pitch)
+    return CACHE_DIR / f"{cache_key}.mp3"
 
 VOICE_LIST = [
     VoiceDesc(name="zh-HK-HiuGaaiNeural", gender=GENDER_TYPE.FEMALE),
@@ -117,20 +133,37 @@ class EdgeApiTts(BaseTTSEngine):
         if not voice:
             raise KeyError("LitAPI tts voice is required")
         logger.debug(f"[TTS] Engine input[{voice}]: {input.data}")
-        rate = "+" + str(rate) + "%" if rate >= 0 else "" + str(rate) + "%"
-        volume = "+" + str(volume) + "%" if volume >= 0 else "" + str(volume) + "%"
-        pitch = "+" + str(pitch) + "Hz" if pitch >= 0 else "" + str(pitch) + "HZ"
-        communicate = edge_tts.Communicate(
-            text=input.data, 
-            voice=voice,
-            rate=rate,
-            volume=volume,
-            pitch=pitch
-        )
-        data = b''
-        async for message in communicate.stream():
-            if message["type"] == "audio":
-                data += message["data"]
+        
+        # 检查缓存
+        cache_path = get_cache_path(input.data, voice, rate, volume, pitch)
+        if cache_path.exists():
+            logger.info(f"[TTS] 使用缓存: {cache_path}")
+            with open(cache_path, 'rb') as f:
+                data = f.read()
+        else:
+            # 确保缓存目录存在
+            CACHE_DIR.mkdir(parents=True, exist_ok=True)
+            
+            rate = "+" + str(rate) + "%" if rate >= 0 else "" + str(rate) + "%"
+            volume = "+" + str(volume) + "%" if volume >= 0 else "" + str(volume) + "%"
+            pitch = "+" + str(pitch) + "Hz" if pitch >= 0 else "" + str(pitch) + "HZ"
+            communicate = edge_tts.Communicate(
+                text=input.data, 
+                voice=voice,
+                rate=rate,
+                volume=volume,
+                pitch=pitch
+            )
+            data = b''
+            async for message in communicate.stream():
+                if message["type"] == "audio":
+                    data += message["data"]
+            
+            # 保存到缓存
+            with open(cache_path, 'wb') as f:
+                f.write(data)
+            logger.info(f"[TTS] 已缓存: {cache_path}")
+        
         # mp3 -> wav
         # data = mp3ToWav(data)
         message = AudioMessage(
