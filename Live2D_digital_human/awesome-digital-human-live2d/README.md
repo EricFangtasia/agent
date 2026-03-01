@@ -38,12 +38,61 @@ PC端页面预览：
 > **交互模式**  
 * 对话模式：专注于数字人文字交互  
 * 沉浸模式：专注与数字人之间拟人方式的直接交互  
+* 新闻模式：循环展示财经新闻，两边布局，自动朗读
 > **Agent模式**
 * ReapterAgent（测试使用）：重复用户输入的语句  
 * DifyAgent：接入Dify的服务  
 * FastgptAgent：接入fastgpt的服务  
 * CozeAgent：接入coze的服务
-* OpenaiAgent：接入适配openai接口的服务  
+* OpenaiAgent：接入适配openai接口的服务
+
+## 模式说明
+
+### 新闻模式 vs 对话模式
+
+| 特性 | 新闻模式 | 对话模式 |
+|------|---------|---------|
+| 点击屏幕 | 无响应（禁用） | 触发默认话术 |
+| 输入框 | 隐藏 | 显示 |
+| 内容展示 | 新闻列表（两边布局） | 对话记录 |
+| 自动朗读 | 自动朗读新闻内容 | 用户发送后朗读 |
+| 数据来源 | 财经新闻爬虫 | 大模型对话 |
+
+### 新闻模式功能
+- **自动循环**：每15秒自动切换下一条新闻
+- **语音合成**：自动朗读新闻标题和内容
+- **两边展示**：左侧显示当前新闻，右侧显示下一条新闻预览
+- **分类标签**：显示行业、级别、板块、投资评级等信息
+
+### 启用新闻模式
+点击顶部工具栏的「新闻模式」按钮即可切换。
+
+## 财经新闻爬虫
+
+本项目集成了财经新闻爬虫功能，位于 `digitalHuman/crawler/` 目录。
+
+### 功能特性
+- 财联社电报新闻自动采集
+- AI智能分析（行业分类、投资评级）
+- 火山引擎豆包大模型集成
+- 定时任务支持
+
+### 目录结构
+```
+digitalHuman/crawler/
+├── crawler/          # 爬虫模块
+├── ai_analyzer/      # AI分析模块
+├── database/         # 数据库模块
+├── config/           # 配置模块
+├── rating_system/    # 评级系统
+└── utils/            # 工具函数
+```
+
+### 依赖安装
+```bash
+cd digitalHuman/crawler
+pip install -r requirements.txt
+```  
 
 ## 版本记录
 > ### v1.0.0
@@ -125,3 +174,29 @@ PC端页面预览：
 | 商务合作 | 兴趣小组 |
 | --- | --- |
 | ![](assets/wechat_2.png) | ![](assets/wechat_1.png) |
+
+
+这是财经新闻数据表的字段说明：
+字段名	类型	含义说明
+id	int	主键ID，自增，唯一标识每条新闻
+title	varchar(500)	新闻标题，必填
+content	text	新闻正文内容，必填
+source_url	varchar(1000)	新闻原始链接，如 https://www.cls.cn/detail/xxx
+publish_time	datetime	新闻发布时间，从财联社页面获取
+category	varchar(100)	新闻分类，如：快讯、公告、行业动态等
+crawl_time	datetime	爬取时间，默认当前时间，记录何时入库
+ai_summary	text	AI摘要，LLM生成的新闻摘要
+accuracy_score	float	准确率评分（已废弃），之前用于校准性分析
+investment_rating	int	投资评级，1-10分，分数越高投资价值越大
+investment_type	varchar(20)	投资类型：短期 / 长期
+is_viral	tinyint(1)	是否重磅：0=普通新闻，1=重磅新闻
+industry	varchar(100)	所属行业，如：科技、金融、医药、汽车等
+industry_level	varchar(20)	行业等级：A级（高景气）/ B级（一般）/ C级（低景气）
+sector	varchar(100)	细分板块，如：人工智能、新能源汽车、创新药等
+analysis_time	datetime	分析时间（已废弃，用analyzed_at替代）
+recommended_industry	varchar(500)	推荐行业（已废弃）
+concepts	varchar(500)	相关概念，如：AI芯片、固态电池等
+related_stocks	varchar(500)	相关股票，提及的上市公司
+analyzed_at	timestamp	AI分析完成时间，记录何时完成LLM分析
+source	varchar(50)	新闻来源，默认"财联社"
+analysis	text	AI分析内容，LLM生成的投资建议和分析报告

@@ -175,7 +175,19 @@ export class Live2dManager {
       this._ttsQueue = [];
     }
 
-    public playAudio(): ArrayBuffer | null {
+    public async playAudio(): Promise<ArrayBuffer | null> {
+      // 检查并恢复 AudioContext 状态（解决浏览器自动播放策略问题）
+      if (this._audioContext.state === 'suspended') {
+        console.log('[Live2D] AudioContext is suspended, attempting to resume...');
+        try {
+          await this._audioContext.resume();
+          console.log('[Live2D] AudioContext resumed successfully');
+        } catch (e) {
+          console.error('[Live2D] Failed to resume AudioContext:', e);
+          return null;
+        }
+      }
+      
       if (this._audioIsPlaying) return null; // 如果正在播放则返回
       const audioData = this.popAudioQueue();
       if (audioData == null) return null; // 没有音频数据则返回
@@ -464,6 +476,86 @@ export class Live2dManager {
       this._lipFactor = 1.0;
       this._ready = false;
       this._lipSyncAnimationId = null;
+      
+      // 添加用户交互监听器，在第一次点击时恢复AudioContext
+      this._setupAudioContextResume();
+      
+      // 监听表情和动作事件
+      this._setupLive2DEventListeners();
+    }
+    
+    /**
+     * 设置Live2D事件监听器（表情、动作）
+     */
+    private _setupLive2DEventListeners(): void {
+      // 监听表情变化事件
+      window.addEventListener('live2d:expression', ((event: CustomEvent) => {
+        const { expression } = event.detail;
+        console.log(`[Live2D] Expression event: ${expression}`);
+        
+        const delegate = LAppDelegate.getInstance();
+        const subdelegates = delegate.getSubdelegate();
+        if (!subdelegates || subdelegates.getSize() === 0) return;
+        
+        const live2dManager = subdelegates.at(0).getLive2DManager();
+        const model = live2dManager.getCurrentModel();
+        if (model) {
+          try {
+            model.setExpression(expression);
+          } catch (e) {
+            // 如果指定表情不存在，使用随机表情
+            model.setRandomExpression();
+          }
+        }
+      }) as EventListener);
+      
+      // 监听动作触发事件
+      window.addEventListener('live2d:emotion', ((event: CustomEvent) => {
+        const { emotion } = event.detail;
+        console.log(`[Live2D] Emotion event: ${emotion}`);
+        this.triggerEmotionMotion(emotion);
+      }) as EventListener);
+      
+      // 监听随机动作事件
+      window.addEventListener('live2d:action', (() => {
+        console.log('[Live2D] Action event triggered');
+        this.triggerRandomAction();
+      }) as EventListener);
+    }
+    
+    /**
+     * 触发随机动作
+     */
+    public triggerRandomAction(): void {
+      const delegate = LAppDelegate.getInstance();
+      const subdelegates = delegate.getSubdelegate();
+      if (!subdelegates || subdelegates.getSize() === 0) return;
+      
+      const live2dManager = subdelegates.at(0).getLive2DManager();
+      live2dManager.playRandomAction();
+    }
+    
+    /**
+     * 设置AudioContext恢复机制
+     * 浏览器安全策略要求AudioContext必须在用户手势后才能启动
+     */
+    private _setupAudioContextResume(): void {
+      const resumeAudio = async () => {
+        if (this._audioContext.state === 'suspended') {
+          console.log('[Live2D] User interaction detected, resuming AudioContext...');
+          try {
+            await this._audioContext.resume();
+            console.log('[Live2D] AudioContext resumed after user interaction');
+          } catch (e) {
+            console.error('[Live2D] Failed to resume AudioContext:', e);
+          }
+        }
+      };
+      
+      // 监听多种用户交互事件
+      ['click', 'touchstart', 'keydown'].forEach(event => {
+        document.addEventListener(event, resumeAudio, { once: true, passive: true });
+      });
     }
 
     private static _instance: Live2dManager;

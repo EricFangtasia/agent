@@ -1,7 +1,7 @@
 {
   "Metadata": {
-    "title": "马上有钱",
-    "description": "马上有钱"
+    "title": "数字人AI虚拟主播",
+    "description": "数字人AI虚拟主播"
   },
   "Common": {
     "close": "关闭",
@@ -89,6 +89,8 @@
       "asrEnableTip": "请先打开语音识别开关",
       "thinking": "深度思考中",
       "loading": "加载中",
+      "newsMode": "新闻模式",
+      "chatMode": "对话模式",
       "items": {
         "setting": "设置",
         "gallery": "画廊",

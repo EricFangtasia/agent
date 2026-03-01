@@ -157,7 +157,7 @@ export function useChatWithAgent() {
                             // 将音频数据放入队列
                             manager.pushAudioQueue(buffer);
                             // 立即尝试播放音频
-                            manager.playAudio();
+                            manager.playAudio().catch(err => console.error('[Chat] playAudio error:', err));
                             ttsText = "";  
                         })
                     }

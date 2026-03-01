@@ -199,7 +199,34 @@ export const useSentioChatModeStore = create<SentioChatModeState>()(
             setChatMode: (by: CHAT_MODE) => set((state) => ({ chatMode: by })),
         }),
         {
-            name: 'sentio-chat-mode-storage',
+            name: 'sentio-chat-mode-storage-v4',  // v4: 强制新闻模式为默认
+        }
+    )
+)
+
+// ==================== 新闻设置 ==================
+type TimeRange = '2days' | '3days' | '1week' | '2weeks' | '1month';
+
+interface SentioNewsSettingsState {
+    contentLines: number;
+    timeRange: TimeRange;
+    readImportantOnly: boolean;
+    setContentLines: (lines: number) => void;
+    setTimeRange: (range: TimeRange) => void;
+    setReadImportantOnly: (important: boolean) => void;
+}
+export const useSentioNewsSettingsStore = create<SentioNewsSettingsState>()(
+    persist(
+        (set) => ({
+            contentLines: 3,
+            timeRange: '3days' as TimeRange,
+            readImportantOnly: false, // 默认显示全部新闻
+            setContentLines: (lines: number) => set({ contentLines: lines }),
+            setTimeRange: (range: TimeRange) => set({ timeRange: range }),
+            setReadImportantOnly: (important: boolean) => set({ readImportantOnly: important }),
+        }),
+        {
+            name: 'sentio-news-settings-storage',
         }
     )
 )

@@ -89,6 +89,8 @@
       "asrEnableTip": "Please enable the ASR",
       "thinking": "Thinking",
       "loading": "Loading",
+      "newsMode": "News Mode",
+      "chatMode": "Chat Mode",
       "items": {
         "setting": "Setting",
         "gallery": "Gallery",

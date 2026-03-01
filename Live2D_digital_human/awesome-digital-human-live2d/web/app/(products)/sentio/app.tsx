@@ -65,7 +65,9 @@ export default function App() {
                     :
                     <div className='flex flex-col w-full h-full'>
                         <Header />
-                        <ChatBot />
+                        <div className="flex-1 z-10">
+                            <ChatBot />
+                        </div>
                     </div>
                 }
                 <Live2d />

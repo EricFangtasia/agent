@@ -106,16 +106,289 @@ export class LAppLive2DManager {
     // 播放身体触碰动作（如果模型有的话）
     model.startRandomMotion(
       LAppDefine.MotionGroupTapBody,
-      LAppDefine.PriorityNormal,
+      LAppDefine.PriorityForce,  // 使用高优先级确保动作播放
       null,
       null
     );
+    
+    // 随机选择动作（不再用锁限制，让动作更自由）
+    const extraActions = [
+      () => this.playShakeAnimation(model),      // 摇晃 - 最柔和
+      () => this.playNodAnimation(model),        // 点头 - 可爱
+      () => this.playHeadTiltAnimation(model),   // 歪头 - 卖萌
+      () => this.playLeanForwardAnimation(model),// 前倾 - 互动
+      () => this.playBounceAnimation(model),     // 轻弹 - 活泼
+    ];
+    const randomAction = extraActions[Math.floor(Math.random() * extraActions.length)];
+    randomAction();
     
     // 触发自定义事件，让外部处理TTS
     const event = new CustomEvent('live2d:touch', {
       detail: { text: randomReaction }
     });
     document.dispatchEvent(event);
+  }
+
+  /**
+   * 播放轻弹动画（更柔和的弹跳）
+   * @param model 要弹跳的模型
+   */
+  private playBounceAnimation(model: LAppModel): void {
+    const modelMatrix = (model as any)._modelMatrix;
+    if (!modelMatrix) return;
+
+    console.log('[Live2D] Playing bounce animation');
+
+    const bounceHeight = 0.04;  // 轻微弹跳
+    const bounceDuration = 400;
+    const startTime = Date.now();
+
+    const animateBounce = () => {
+      const elapsed = Date.now() - startTime;
+      const progress = Math.min(elapsed / bounceDuration, 1.0);
+
+      if (progress < 1.0) {
+        // 弹性缓动 - 更自然的弹跳
+        const easeOutBounce = (t: number): number => {
+          const n1 = 7.5625;
+          const d1 = 2.75;
+          if (t < 1 / d1) {
+            return n1 * t * t;
+          } else if (t < 2 / d1) {
+            return n1 * (t -= 1.5 / d1) * t + 0.75;
+          } else if (t < 2.5 / d1) {
+            return n1 * (t -= 2.25 / d1) * t + 0.9375;
+          } else {
+            return n1 * (t -= 2.625 / d1) * t + 0.984375;
+          }
+        };
+        const bounce = easeOutBounce(progress) * bounceHeight;
+        modelMatrix.translateY(-bounce);  // 向上弹
+        requestAnimationFrame(animateBounce);
+      } else {
+        modelMatrix.translateY(0);
+      }
+    };
+
+    animateBounce();
+  }
+
+  /**
+   * 播放跳跃动画（Y轴位移）- 改进版
+   * @param model 要跳跃的模型
+   */
+  private playJumpAnimation(model: LAppModel): void {
+    const modelMatrix = (model as any)._modelMatrix;
+    if (!modelMatrix) return;
+
+    console.log('[Live2D] Playing jump animation');
+
+    const jumpHeight = 0.06;  // 降低跳跃高度
+    const jumpDuration = 350;
+    const startTime = Date.now();
+
+    const animateJump = () => {
+      const elapsed = Date.now() - startTime;
+      const progress = Math.min(elapsed / jumpDuration, 1.0);
+
+      if (progress < 1.0) {
+        // 使用 easeOutQuad 缓动使跳跃更平滑
+        const easeOut = 1 - (1 - progress) * (1 - progress);
+        const jump = Math.sin(easeOut * Math.PI) * jumpHeight;
+        modelMatrix.translateY(-jump);
+        requestAnimationFrame(animateJump);
+      } else {
+        modelMatrix.translateY(0);
+      }
+    };
+
+    animateJump();
+  }
+
+  /**
+   * 播放摇晃动画（X轴左右摇晃）- 改进版
+   * @param model 要摇晃的模型
+   */
+  private playShakeAnimation(model: LAppModel): void {
+    const modelMatrix = (model as any)._modelMatrix;
+    if (!modelMatrix) return;
+
+    console.log('[Live2D] Playing shake animation');
+
+    const shakeAmplitude = 0.04;
+    const shakeDuration = 300;
+    const startTime = Date.now();
+
+    const animateShake = () => {
+      const elapsed = Date.now() - startTime;
+      const progress = Math.min(elapsed / shakeDuration, 1.0);
+
+      if (progress < 1.0) {
+        // 平滑衰减
+        const decay = 1 - progress * progress;
+        const shake = Math.sin(progress * Math.PI * 4) * shakeAmplitude * decay;
+        modelMatrix.translateX(shake);
+        requestAnimationFrame(animateShake);
+      } else {
+        modelMatrix.translateX(0);
+      }
+    };
+
+    animateShake();
+  }
+
+  /**
+   * 播放点头动画 - 改进版
+   * @param model 要点头的模型
+   */
+  private playNodAnimation(model: LAppModel): void {
+    const modelMatrix = (model as any)._modelMatrix;
+    if (!modelMatrix) return;
+
+    console.log('[Live2D] Playing nod animation');
+
+    const nodDepth = 0.03;
+    const nodDuration = 500;
+    const startTime = Date.now();
+
+    const animateNod = () => {
+      const elapsed = Date.now() - startTime;
+      const progress = Math.min(elapsed / nodDuration, 1.0);
+
+      if (progress < 1.0) {
+        // 两次点头，带缓动
+        const easeInOut = progress < 0.5 
+          ? 2 * progress * progress 
+          : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+        const nod = Math.sin(progress * Math.PI * 3) * nodDepth;
+        modelMatrix.translateY(nod);
+        requestAnimationFrame(animateNod);
+      } else {
+        modelMatrix.translateY(0);
+      }
+    };
+
+    animateNod();
+  }
+
+  /**
+   * 播放歪头动画（歪头杀）- 改进版
+   * @param model 要歪头的模型
+   */
+  private playHeadTiltAnimation(model: LAppModel): void {
+    const modelMatrix = (model as any)._modelMatrix;
+    if (!modelMatrix) return;
+
+    console.log('[Live2D] Playing head tilt animation');
+
+    const tiltAmplitude = 0.03;
+    const tiltDuration = 600;
+    const startTime = Date.now();
+    const direction = Math.random() > 0.5 ? 1 : -1;
+
+    const animateTilt = () => {
+      const elapsed = Date.now() - startTime;
+      const progress = Math.min(elapsed / tiltDuration, 1.0);
+
+      if (progress < 1.0) {
+        // 平滑的正弦曲线
+        const tilt = Math.sin(progress * Math.PI) * tiltAmplitude * direction;
+        modelMatrix.translateX(tilt);
+        requestAnimationFrame(animateTilt);
+      } else {
+        modelMatrix.translateX(0);
+      }
+    };
+
+    animateTilt();
+  }
+
+  /**
+   * 播放身体前倾动画 - 改进版
+   * @param model 要前倾的模型
+   */
+  private playLeanForwardAnimation(model: LAppModel): void {
+    const modelMatrix = (model as any)._modelMatrix;
+    if (!modelMatrix) return;
+
+    console.log('[Live2D] Playing lean forward animation');
+
+    const leanAmount = 0.03;
+    const leanDuration = 500;
+    const startTime = Date.now();
+
+    const animateLean = () => {
+      const elapsed = Date.now() - startTime;
+      const progress = Math.min(elapsed / leanDuration, 1.0);
+
+      if (progress < 1.0) {
+        // 平滑的前倾和恢复
+        const lean = Math.sin(progress * Math.PI) * leanAmount;
+        modelMatrix.translateY(lean);
+        requestAnimationFrame(animateLean);
+      } else {
+        modelMatrix.translateY(0);
+      }
+    };
+
+    animateLean();
+  }
+
+  /**
+   * 播放深呼吸动画（缩放呼吸）
+   * @param model 要呼吸的模型
+   */
+  public playBreathAnimation(model: LAppModel): void {
+    const modelMatrix = (model as any)._modelMatrix;
+    if (!modelMatrix) return;
+
+    console.log('[Live2D] Playing breath animation');
+
+    const breathAmplitude = 0.015;
+    const breathDuration = 2000;   // 呼吸周期
+    const startTime = Date.now();
+
+    const animateBreath = () => {
+      const elapsed = Date.now() - startTime;
+      const progress = (elapsed % breathDuration) / breathDuration;
+
+      // 正弦波呼吸
+      const breath = Math.sin(progress * Math.PI * 2) * breathAmplitude;
+      modelMatrix.translateY(breath);
+
+      // 持续2个呼吸周期后停止
+      if (elapsed < breathDuration * 2) {
+        requestAnimationFrame(animateBreath);
+      } else {
+        modelMatrix.translateY(0);
+      }
+    };
+
+    animateBreath();
+  }
+
+  /**
+   * 播放随机动作（用于定时触发）
+   */
+  public playRandomAction(): void {
+    if (!this._subdelegate || this._models.getSize() === 0) return;
+    
+    const model = this._models.at(0);
+    if (!model) return;
+
+    const actions = [
+      () => this.playShakeAnimation(model),
+      () => this.playNodAnimation(model),
+      () => this.playHeadTiltAnimation(model),
+      () => this.playLeanForwardAnimation(model),
+      () => this.playBounceAnimation(model),
+    ];
+
+    const randomAction = actions[Math.floor(Math.random() * actions.length)];
+    randomAction();
+    
+    // 同时切换表情
+    model.setRandomExpression();
   }
 
   /**

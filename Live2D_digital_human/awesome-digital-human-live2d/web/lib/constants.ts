@@ -41,5 +41,5 @@ export const SENTIO_LIPFACTOR_DEFAULT = 5.0
 export const SENTIO_LIPFACTOR_MAX: number = 10.0
 export const SENTIO_VOICE_TEST_ZH: string[] = ["今天最浪漫的事就是遇见你。", "你有百般模样，我也会百般喜欢。", "这里什么都好，因为这就是你。"]
 export const SENTIO_VOICE_TEST_EN: string[] = ["Someone said you were looking for me?"]
-export const SENTIO_CHATMODE_DEFULT = PROTOCOL.CHAT_MODE.DIALOGUE
+export const SENTIO_CHATMODE_DEFULT = PROTOCOL.CHAT_MODE.NEWS
 export const SENTIO_THENE_DEFAULT = PROTOCOL.APP_TYPE.FREEDOM

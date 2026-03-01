@@ -11,6 +11,13 @@ from digitalHuman.utils import config
 from digitalHuman.protocol import ParamDesc, EngineDesc, ENGINE_TYPE, UserDesc, AudioMessage, TextMessage, VoiceDesc
 from digitalHuman.server.models import TTSEngineInput
 
+# 导入抖音敏感词过滤
+try:
+    from digitalHuman.utils.douyin_filter import filter_text_for_douyin
+    DOUYIN_FILTER_ENABLED = True
+except ImportError:
+    DOUYIN_FILTER_ENABLED = False
+
 enginePool = EnginePool()
 
 def get_tts_list() -> List[EngineDesc]:
@@ -32,7 +39,13 @@ def get_tts_param(name: str) -> List[ParamDesc]:
 async def tts_infer(user: UserDesc, item: TTSEngineInput) -> AudioMessage:
     if item.engine.lower() == "default":
         item.engine = config.SERVER.ENGINES.TTS.DEFAULT
-    input = TextMessage(data=item.data)
+    
+    # 抖音敏感词过滤
+    text_data = item.data
+    if DOUYIN_FILTER_ENABLED:
+        text_data = filter_text_for_douyin(item.data)
+    
+    input = TextMessage(data=text_data)
     engine = enginePool.getEngine(ENGINE_TYPE.TTS, item.engine)
     output: AudioMessage = await engine.run(input=input, user=user, **item.config)
     return output

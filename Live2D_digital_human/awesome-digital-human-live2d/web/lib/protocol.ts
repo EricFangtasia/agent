@@ -48,7 +48,9 @@ export enum CHAT_ROLE {
 
 export enum CHAT_MODE {
     "DIALOGUE" = "DIALOGUE",
-    "IMMSERSIVE" = "IMMSERSIVE"
+    "IMMSERSIVE" = "IMMSERSIVE",
+    "NEWS" = "NEWS",
+    "QUOTES" = "QUOTES"
 }
 
 export enum AUDIO_TYPE {

@@ -10,7 +10,7 @@ import "@/styles/globals.css";
 const inter = Inter({subsets: ['latin']});
 
 export const metadata: Metadata = {
-  title: '马上有钱',
+  title: '数字人AI虚拟主播',
   icons: 'favicon.icon',
 };
 

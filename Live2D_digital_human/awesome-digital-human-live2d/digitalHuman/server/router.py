@@ -11,6 +11,8 @@ from digitalHuman.server.api.asr.asr_api_v0 import router as asrRouter
 from digitalHuman.server.api.tts.tts_api_v0 import router as ttsRouter
 from digitalHuman.server.api.llm.llm_api_v0 import router as llmRouter
 from digitalHuman.server.api.agent.agent_api_v0 import router as agentRouter
+from digitalHuman.server.api.news.news_api_v0 import router as newsRouter
+from digitalHuman.server.api.quotes.quotes_tts_api import router as quotesRouter
 from digitalHuman.utils import config
 
 
@@ -37,3 +39,5 @@ app.include_router(asrRouter, prefix=GLOABLE_PREFIX, tags=["ASR"])
 app.include_router(ttsRouter, prefix=GLOABLE_PREFIX, tags=["TTS"])
 app.include_router(llmRouter, prefix=GLOABLE_PREFIX, tags=["LLM"])
 app.include_router(agentRouter, prefix=GLOABLE_PREFIX, tags=["AGENT"])
+app.include_router(newsRouter, prefix=GLOABLE_PREFIX, tags=["NEWS"])
+app.include_router(quotesRouter, prefix=GLOABLE_PREFIX, tags=["QUOTES"])

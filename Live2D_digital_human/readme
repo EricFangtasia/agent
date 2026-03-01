@@ -12,3 +12,35 @@ Here are the files and directories up to 2 levels deep in /mnt/skills/public/fro
 15K	/mnt/skills/public/frontend-design
 10K	/mnt/skills/public/frontend-design/LICENSE.txt
 4.5K	/mnt/skills/public/frontend-design/SKILL.md
+
+
+
+这是财经新闻数据表的字段说明：
+字段名	类型	含义说明
+id	int	主键ID，自增，唯一标识每条新闻
+title	varchar(500)	新闻标题，必填
+content	text	新闻正文内容，必填
+source_url	varchar(1000)	新闻原始链接，如 https://www.cls.cn/detail/xxx
+publish_time	datetime	新闻发布时间，从财联社页面获取
+category	varchar(100)	新闻分类，如：快讯、公告、行业动态等
+crawl_time	datetime	爬取时间，默认当前时间，记录何时入库
+ai_summary	text	AI摘要，LLM生成的新闻摘要
+accuracy_score	float	准确率评分（已废弃），之前用于校准性分析
+investment_rating	int	投资评级，1-10分，分数越高投资价值越大
+investment_type	varchar(20)	投资类型：短期 / 长期
+is_viral	tinyint(1)	是否重磅：0=普通新闻，1=重磅新闻
+industry	varchar(100)	所属行业，如：科技、金融、医药、汽车等
+industry_level	varchar(20)	行业等级：A级（高景气）/ B级（一般）/ C级（低景气）
+sector	varchar(100)	细分板块，如：人工智能、新能源汽车、创新药等
+analysis_time	datetime	分析时间（已废弃，用analyzed_at替代）
+recommended_industry	varchar(500)	推荐行业（已废弃）
+concepts	varchar(500)	相关概念，如：AI芯片、固态电池等
+related_stocks	varchar(500)	相关股票，提及的上市公司
+analyzed_at	timestamp	AI分析完成时间，记录何时完成LLM分析
+source	varchar(50)	新闻来源，默认"财联社"
+analysis	text	AI分析内容，LLM生成的投资建议和分析报告
+
+
+taskkill /F /IM node.exe 2>$null; $env:PATH="D:\project\js\node-v24.13.1-win-x64;$env:PATH"; cd "d:\project\py\agent\adh\Live2D_digital_human\awesome-digital-human-live2d\web"; npm.cmd run dev
+& d:/project/py/.venv/Scripts/Activate.ps
+$env:HTTP_PROXY = "http://127.0.0.1:7890"; $env:HTTPS_PROXY = "http://127.0.0.1:7890"; cd d:\project\py\agent\adh\Live2D_digital_human\awesome-digital-human-live2d; d:\project\py\fresh_env\Scripts\python.exe main.py
